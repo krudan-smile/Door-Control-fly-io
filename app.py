@@ -6,11 +6,6 @@ import time
 import os
 from flet.fastapi import app as flet_app
 import uvicorn
-import httpx
-from fastapi import Request
-
-# LINE BOT TOKEN
-LINE_CHANNEL_ACCESS_TOKEN = "BXLjj5fuUsymF+coBARUIoqy6ZjKxJzpkEq/82dHzmX9kaOmH2yeKvEK6hNumGBAF3azxj6VSsYYjkDUaodMHVlMU/AOjV240iLnC9ltzPUYyay6tF0vbKMOudjmHIuZe5htYk+YlZ2VTjFsJ8ZwEQdB04t89/1O/w1cDnyilFU="
 
 # Firebase config
 firebaseConfig = {
@@ -125,27 +120,43 @@ def main(page: ft.Page):
 
         update_switch_status()
 
-        MenuTemplat = ft.NavigationBar(
-            on_change=logout,
-            destinations=[
-                ft.NavigationBarDestination(icon=ft.Icons.LOGOUT, label="Logout"),
-            ]
-        )
+        MenuTemplat=ft.NavigationBar(
+          
+                        # on_change=lambda e: print("Selected tab:", e.control.selected_index), 
+                        on_change=logout, 
+                        destinations=[
+                            # ft.NavigationBarDestination(icon=ft.Icons.EXPLORE, label="Explore"),
+                            # ft.NavigationBarDestination(icon=ft.Icons.LIGHT_MODE, label="ระบบแสงสว่าง",tooltip="ระบบแสงสว่าง"),
+                            # ft.NavigationBarDestination(icon=ft.Icons.THERMOSTAT_SHARP,label="ควบคุมอุณหภูมิ",tooltip="ระบบควบคุมอุณหภูมิ"),
+                            # ft.NavigationBarDestination(icon=ft.Icons.PERSON,label="Profile"),
+                            # ft.NavigationBarDestination(icon=ft.Icons.HOME, label="Home"),
+                            ft.NavigationBarDestination(icon=ft.Icons.LOGOUT,label="Logout" ),
+                        ]
+                    ) 
 
         page.add(
             ft.Column([
                 ft.Text("\nควบคุม ปิด-เปิด ประตูแผนกวิชาช่างอิเล็กทรอนิกส์", size=20, weight=ft.FontWeight.BOLD, color="blue", text_align=ft.TextAlign.CENTER),
                 ft.Icon(ft.Icons.HOME, size=80, color="blue"),
                 ft.Row([
-                    ft.Text("ชาย"), sw_men,
-                    ft.Text("หยุด"), sw_men_pause
+                    ft.Text("ชาย"),sw_men,
+                    ft.Text("หยุด"),sw_men_pause
                 ], alignment=ft.MainAxisAlignment.CENTER),
+                # ft.Row([
+                #     ft.Text("หยุดชาย"),
+                #     sw_men_pause
+                # ], alignment=ft.MainAxisAlignment.CENTER),
                 ft.Row([
-                    ft.Text("หญิง"), sw_women,
-                    ft.Text("หยุด"), sw_women_pause
+                    ft.Text("หญิง"),sw_women,
+                    ft.Text("หยุด"),sw_women_pause
                 ], alignment=ft.MainAxisAlignment.CENTER),
+                # ft.Row([
+                #     ft.Text("หยุดหญิง"),
+                #     sw_women_pause
+                # ], alignment=ft.MainAxisAlignment.CENTER),
+                # ft.ElevatedButton("Logout", icon=ft.Icons.LOGOUT, on_click=logout)
             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, alignment=ft.MainAxisAlignment.CENTER),
-            MenuTemplat
+        MenuTemplat
         )
 
     def show_login():
@@ -188,6 +199,7 @@ def main(page: ft.Page):
             for user in users.each():
                 user_data = user.val()
                 if user_data['name'] == username.value and str(user_data['password']) == password.value:
+                    # Use email/password login to get token
                     try:
                         user_auth = auth.sign_in_with_email_and_password(user_data['email'], user_data['password'])
                         id_token = user_auth['idToken']
@@ -204,8 +216,10 @@ def main(page: ft.Page):
                 message.value = "Username หรือ Password ไม่ถูกต้อง"
                 page.update()
 
+        # Start internet status update
         update_internet_status()
 
+        # Add login UI centered in Card and centered on the page
         page.add(
             ft.Container(
                 content=ft.Column(
@@ -223,13 +237,15 @@ def main(page: ft.Page):
                                         internet_status,
                                         username,
                                         password,
+                                        # ft.ElevatedButton("Login", on_click=login),
                                         ft.CupertinoFilledButton(
-                                            content=ft.Text("LOGIN"),
-                                            opacity_on_click=0.3,
-                                            on_click=login,
-                                            width=250,
-                                            height=50,
-                                        ),
+                                        content=ft.Text("LOGIN"),
+                                        opacity_on_click=0.3,
+                                        # on_click=lambda e: print(f"LOGIN! {username.value},{password.value}"),
+                                        on_click= login,
+                                        width=250,
+                                        height=50,
+                                    ),
                                         message
                                     ],
                                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -248,33 +264,6 @@ def main(page: ft.Page):
 
     show_login()
 
-# FastAPI route สำหรับ LIFF
-@flet_app.post("/api/send-message")
-async def send_message(request: Request):
-    data = await request.json()
-    user_id = data.get("userId")
-    display_name = data.get("displayName")
-
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            "https://api.line.me/v2/bot/message/push",
-            headers={
-                "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "to": user_id,
-                "messages": [
-                    {
-                        "type": "text",
-                        "text": f"👋 สวัสดีคุณ {display_name} ระบบ Door Control ยืนยันการเข้าใช้งานแล้ว ✅"
-                    }
-                ]
-            }
-        )
-        print("Push result:", response.status_code, response.text)
-
-    return {"status": "ok"}
-
 if __name__ == "__main__":
     uvicorn.run(flet_app(main), host="0.0.0.0", port=int(os.environ.get("PORT", 8550)))
+
