@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>LINE Login - Door Control</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+  <h2>กำลังตรวจสอบ LINE LIFF ...</h2>
+  <script>
+    async function main() {
+      await liff.init({ liffId: "2007541705-YWRjgDNG" });
+      if (!liff.isLoggedIn()) {
+        liff.login();
+      }
+      const profile = await liff.getProfile();
+      console.log("User:", profile.displayName, profile.userId);
+
+      // ส่ง userId ไป log ที่ backend
+      await fetch('/api/log_user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: profile.userId })
+      });
+
+      // Redirect ไปหน้า Flet App พร้อม userId
+      setTimeout(() => {
+        window.location.href = `/?userId=${encodeURIComponent(profile.userId)}`;
+      }, 500);
+    }
+
+    main();
+  </script>
+</body>
+</html>
