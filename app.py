@@ -3,6 +3,7 @@ import pyrebase
 import requests
 import threading
 import time
+import os
 
 # Firebase config
 firebaseConfig = {
@@ -261,5 +262,6 @@ def main(page: ft.Page):
 
     show_login()
 
-ft.app(target=main, view=ft.WEB_BROWSER)
+ft.app(target=main, view=ft.WEB_SERVER,
+    port=int(os.environ.get("PORT", 8550)))
 
