@@ -177,17 +177,17 @@ def main(page: ft.Page):
         password = ft.TextField(label="Password", password=True, can_reveal_password=True, width=300)
         message = ft.Text("", color="red")
 
-        internet_status = ft.Text("Checking Internet...", color=ft.colors.ORANGE)
+        internet_status = ft.Text("Checking Internet...", color=ft.Colors.ORANGE)
 
         def update_internet_status():
             def run():
                 while True:
                     if check_internet():
-                        internet_status.value = "Internet: Connected"
-                        internet_status.color = ft.colors.GREEN
+                        internet_status.value = "Status: Ready..."
+                        internet_status.color = ft.Colors.GREEN
                     else:
-                        internet_status.value = "Internet: Disconnected"
-                        internet_status.color = ft.colors.RED
+                        internet_status.value = "Status: Disconnected"
+                        internet_status.color = ft.Colors.RED
                     page.update()
                     time.sleep(3)
 
@@ -229,7 +229,7 @@ def main(page: ft.Page):
                             content=ft.Container(
                                 width=min(page.window_width * 0.9, 400),
                                 padding=20,
-                                bgcolor=ft.colors.WHITE,
+                                bgcolor=ft.Colors.WHITE,
                                 border_radius=10,
                                 content=ft.Column(
                                     [

@@ -1,26 +1,15 @@
-# Base image
+# Use official Python image
 FROM python:3.11-slim
 
-# Install build dependencies first
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libffi-dev \
-    libssl-dev \
-    libjpeg-dev \
-    zlib1g-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Set workdir
+# Set working directory
 WORKDIR /app
 
-# Copy app
-COPY . .
-
-# Install dependencies
+# Copy dependencies
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose port
-EXPOSE 8080
+# Copy app code
+COPY . .
 
-# Start app with uvicorn
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]
+# Run Flet app
+CMD ["python", "app.py"]
