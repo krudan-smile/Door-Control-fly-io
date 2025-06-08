@@ -1,36 +1,16 @@
-# fly.toml app configuration file generated for door-control-501 on 2025-06-08T15:29:40+07:00
-#
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
-
 app = 'door-control'
 primary_region = 'hkg'
 
-[build]
-  dockerfile = 'Dockerfile'
-
 [env]
-  PORT = '8080'
+  PORT = '8550'  # optional ถ้าอยากกำหนด
 
 [http_service]
-  internal_port = 8080
+  internal_port = 8550   # หรือ 8000 ถ้าใน app.py ระบุ
   force_https = true
   auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
   processes = ['app']
-
-[[services]]
-  protocol = 'tcp'
-  internal_port = 8080
-
-  [[services.ports]]
-    port = 80
-    handlers = ['http']
-
-  [[services.ports]]
-    port = 443
-    handlers = ['tls', 'http']
 
 [[vm]]
   memory = '1gb'

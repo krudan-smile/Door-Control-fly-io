@@ -1,12 +1,11 @@
-
 import flet as ft
 import pyrebase
 import requests
 import threading
 import time
+import os
 from flet.fastapi import app as flet_app
 import uvicorn
-import os
 
 # Firebase config
 firebaseConfig = {
@@ -23,6 +22,8 @@ firebaseConfig = {
 firebase = pyrebase.initialize_app(firebaseConfig)
 auth = firebase.auth()
 db = firebase.database()
+
+# App
 
 def main(page: ft.Page):
     page.title = "ควบคุม เปิด-ปิด ประตู"
@@ -41,33 +42,33 @@ def main(page: ft.Page):
         page.clean()
 
         sw_men = ft.IconButton(
-            icon=ft.icons.POWER_SETTINGS_NEW,
+            icon=ft.Icons.POWER_SETTINGS_NEW,
             icon_size=50,
-            selected_icon=ft.icons.POWER_SETTINGS_NEW,
+            selected_icon=ft.Icons.POWER_SETTINGS_NEW,
             selected=False,
             style=ft.ButtonStyle(color={"selected": ft.Colors.GREEN, "": ft.Colors.RED})
         )
 
         sw_men_pause = ft.IconButton(
-            icon=ft.icons.POWER_SETTINGS_NEW,
+            icon=ft.Icons.POWER_SETTINGS_NEW,
             icon_size=50,
-            selected_icon=ft.icons.POWER_SETTINGS_NEW,
+            selected_icon=ft.Icons.POWER_SETTINGS_NEW,
             selected=False,
             style=ft.ButtonStyle(color={"selected": ft.Colors.GREEN, "": ft.Colors.RED})
         )
 
         sw_women = ft.IconButton(
-            icon=ft.icons.POWER_SETTINGS_NEW,
+            icon=ft.Icons.POWER_SETTINGS_NEW,
             icon_size=50,
-            selected_icon=ft.icons.POWER_SETTINGS_NEW,
+            selected_icon=ft.Icons.POWER_SETTINGS_NEW,
             selected=False,
             style=ft.ButtonStyle(color={"selected": ft.Colors.GREEN, "": ft.Colors.RED})
         )
 
         sw_women_pause = ft.IconButton(
-            icon=ft.icons.POWER_SETTINGS_NEW,
+            icon=ft.Icons.POWER_SETTINGS_NEW,
             icon_size=50,
-            selected_icon=ft.icons.POWER_SETTINGS_NEW,
+            selected_icon=ft.Icons.POWER_SETTINGS_NEW,
             selected=False,
             style=ft.ButtonStyle(color={"selected": ft.Colors.GREEN, "": ft.Colors.RED})
         )
@@ -111,6 +112,7 @@ def main(page: ft.Page):
             page.client_storage.remove("saved_token")
             show_login()
 
+        # Set on_click handlers
         sw_men.on_click = toggle_sw1
         sw_men_pause.on_click = toggle_pause1
         sw_women.on_click = toggle_sw2
@@ -119,31 +121,50 @@ def main(page: ft.Page):
         update_switch_status()
 
         MenuTemplat=ft.NavigationBar(
-            on_change=logout,
-            destinations=[
-                ft.NavigationBarDestination(icon=ft.Icons.LOGOUT,label="Logout"),
-            ]
-        )
+          
+                        # on_change=lambda e: print("Selected tab:", e.control.selected_index), 
+                        on_change=logout, 
+                        destinations=[
+                            # ft.NavigationBarDestination(icon=ft.Icons.EXPLORE, label="Explore"),
+                            # ft.NavigationBarDestination(icon=ft.Icons.LIGHT_MODE, label="ระบบแสงสว่าง",tooltip="ระบบแสงสว่าง"),
+                            # ft.NavigationBarDestination(icon=ft.Icons.THERMOSTAT_SHARP,label="ควบคุมอุณหภูมิ",tooltip="ระบบควบคุมอุณหภูมิ"),
+                            # ft.NavigationBarDestination(icon=ft.Icons.PERSON,label="Profile"),
+                            # ft.NavigationBarDestination(icon=ft.Icons.HOME, label="Home"),
+                            ft.NavigationBarDestination(icon=ft.Icons.LOGOUT,label="Logout" ),
+                        ]
+                    ) 
 
         page.add(
             ft.Column([
                 ft.Text("\nควบคุม ปิด-เปิด ประตูแผนกวิชาช่างอิเล็กทรอนิกส์", size=20, weight=ft.FontWeight.BOLD, color="blue", text_align=ft.TextAlign.CENTER),
-                ft.Icon(ft.icons.HOME, size=80, color="blue"),
+                ft.Icon(ft.Icons.HOME, size=80, color="blue"),
                 ft.Row([
                     ft.Text("ชาย"),sw_men,
                     ft.Text("หยุด"),sw_men_pause
                 ], alignment=ft.MainAxisAlignment.CENTER),
+                # ft.Row([
+                #     ft.Text("หยุดชาย"),
+                #     sw_men_pause
+                # ], alignment=ft.MainAxisAlignment.CENTER),
                 ft.Row([
                     ft.Text("หญิง"),sw_women,
                     ft.Text("หยุด"),sw_women_pause
                 ], alignment=ft.MainAxisAlignment.CENTER),
+                # ft.Row([
+                #     ft.Text("หยุดหญิง"),
+                #     sw_women_pause
+                # ], alignment=ft.MainAxisAlignment.CENTER),
+                # ft.ElevatedButton("Logout", icon=ft.Icons.LOGOUT, on_click=logout)
             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, alignment=ft.MainAxisAlignment.CENTER),
-            MenuTemplat
+        MenuTemplat
         )
 
     def show_login():
         page.clean()
+
         saved_token = page.client_storage.get("saved_token")
+
+        # If token exists, try to auto-login
         if saved_token:
             try:
                 auth.get_account_info(saved_token)
@@ -178,6 +199,7 @@ def main(page: ft.Page):
             for user in users.each():
                 user_data = user.val()
                 if user_data['name'] == username.value and str(user_data['password']) == password.value:
+                    # Use email/password login to get token
                     try:
                         user_auth = auth.sign_in_with_email_and_password(user_data['email'], user_data['password'])
                         id_token = user_auth['idToken']
@@ -194,8 +216,10 @@ def main(page: ft.Page):
                 message.value = "Username หรือ Password ไม่ถูกต้อง"
                 page.update()
 
+        # Start internet status update
         update_internet_status()
 
+        # Add login UI centered in Card and centered on the page
         page.add(
             ft.Container(
                 content=ft.Column(
@@ -213,13 +237,15 @@ def main(page: ft.Page):
                                         internet_status,
                                         username,
                                         password,
+                                        # ft.ElevatedButton("Login", on_click=login),
                                         ft.CupertinoFilledButton(
-                                            content=ft.Text("LOGIN"),
-                                            opacity_on_click=0.3,
-                                            on_click= login,
-                                            width=250,
-                                            height=50,
-                                        ),
+                                        content=ft.Text("LOGIN"),
+                                        opacity_on_click=0.3,
+                                        # on_click=lambda e: print(f"LOGIN! {username.value},{password.value}"),
+                                        on_click= login,
+                                        width=250,
+                                        height=50,
+                                    ),
                                         message
                                     ],
                                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -240,3 +266,4 @@ def main(page: ft.Page):
 
 if __name__ == "__main__":
     uvicorn.run(flet_app(main), host="0.0.0.0", port=int(os.environ.get("PORT", 8550)))
+

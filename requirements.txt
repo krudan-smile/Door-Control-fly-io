@@ -1,5 +1,5 @@
-flet==0.23.0
-fastapi==0.110.0
-uvicorn==0.27.1
+flet==0.27.6
+flet-web
 pyrebase4==4.7.1
-requests>=2.19.1, <2.30
+requests<2.30
+uvicorn

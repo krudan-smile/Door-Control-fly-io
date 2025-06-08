@@ -24,7 +24,9 @@
       });
 
       // Redirect ไปหน้า Flet App พร้อม userId
-      window.location.href = `/?userId=${encodeURIComponent(profile.userId)}`;
+      setTimeout(() => {
+        window.location.href = `/?userId=${encodeURIComponent(profile.userId)}`;
+      }, 500);
     }
 
     main();
