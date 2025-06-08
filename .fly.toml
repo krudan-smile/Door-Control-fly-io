@@ -1,0 +1,6 @@
+app = "door-control-app"
+
+[build]
+
+[env]
+PORT = "8550"
