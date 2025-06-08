@@ -1,58 +1,35 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Door Control - User Info</title>
-  <script src="https://static.line-scdn.net/liff/edge/versions/2.22.4/sdk.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 50px;
-    }
-    img {
-      border-radius: 50%;
-      width: 150px;
-      height: 150px;
-    }
-  </style>
+  <title>Door Control LIFF</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
-  <h1>🔐 Door Control System</h1>
-  <h2>User Info</h2>
-  <div id="profile">
-    <p>Loading user info...</p>
-  </div>
-
+  <h2>🚪 Door Control System</h2>
+  <p>กำลังโหลดข้อมูลผู้ใช้...</p>
   <script>
     async function main() {
-      try {
-        await liff.init({
-          liffId: '2007541705-YWRjgDNG'  // 👉 เปลี่ยนเป็น LIFF ID ของคุณ เช่น "2007541705-YWRjgDNG"
-        });
+      await liff.init({ liffId: "2007541705-YWRjgDNG" });
 
-        if (!liff.isLoggedIn()) {
-          liff.login();
-          return;
-        }
-
-        const profile = await liff.getProfile();
-
-        document.getElementById('profile').innerHTML = `
-          <img src="${profile.pictureUrl}" alt="Profile Picture" />
-          <p><strong>Name:</strong> ${profile.displayName}</p>
-          <p><strong>User ID:</strong> ${profile.userId}</p>
-        `;
-
-        // Optional: Log token (if needed for backend)
-        const accessToken = liff.getAccessToken();
-        console.log('Access Token:', accessToken);
-
-      } catch (err) {
-        console.error('LIFF init error', err);
-        document.getElementById('profile').innerHTML = '<p style="color:red;">Error loading user info. Please try again.</p>';
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return;
       }
+
+      const profile = await liff.getProfile();
+
+      await fetch("/api/send-message", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          userId: profile.userId,
+          displayName: profile.displayName
+        })
+      });
+
+      document.body.innerHTML = `<h2>✅ สวัสดีคุณ ${profile.displayName}, ระบบแจ้งข้อมูลเข้าห้องแชทแล้ว!</h2>`;
     }
 
     main();
