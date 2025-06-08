@@ -3,6 +3,8 @@ import pyrebase
 import requests
 import threading
 import time
+from flet.fastapi import app as flet_app
+import uvicorn
 import os
 
 # Firebase config
@@ -262,6 +264,6 @@ def main(page: ft.Page):
 
     show_login()
 
-ft.app(target=main, view=ft.WEB_SERVER,
-    port=int(os.environ.get("PORT", 8550)))
+if __name__ == "__main__":
+    uvicorn.run(flet_app(main), host="0.0.0.0", port=int(os.environ.get("PORT", 8550)))
 
