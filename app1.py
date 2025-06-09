@@ -39,18 +39,6 @@ def main(page: ft.Page):
     def show_home(user_info):
         page.clean()
 
-        user_id = user_info['localId']
-        display_name = user_info.get('displayName') or user_info.get('email')
-        user_name_for_log = display_name
-
-        # 👉 อัปเดต UsersActive
-        db.child("UsersActive").child(user_id).set({
-            "displayName": display_name,
-            "email": user_info.get('email'),
-            "active": True,
-            "lastActiveTime": time.strftime("%Y-%m-%d %H:%M:%S")
-        })
-
         # ตัวอย่างปุ่มเปิดปิดประตู
         sw_men = ft.IconButton(
             icon=ft.Icons.POWER_SETTINGS_NEW,
@@ -92,46 +80,35 @@ def main(page: ft.Page):
 
             page.update()
 
-        def record_button_history(button_name, new_value):
-            db.child("ButtonHistory").push({
-                "button": button_name,
-                "new_value": new_value,
-                "user_name": user_name_for_log,
-                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
-            })
-
         def toggle_sw1(e):
             current_value = db.child("smart-home").child("Door").child("Sw1").get().val() or "off"
             new_value = "off" if current_value == "on" else "on"
             db.child("smart-home").child("Door").update({"Sw1": new_value})
-            record_button_history("Sw1", new_value)
             update_switch_status()
 
         def toggle_pause1(e):
             current_value = db.child("smart-home").child("Door").child("pause1").get().val() or "off"
             new_value = "off" if current_value == "on" else "on"
             db.child("smart-home").child("Door").update({"pause1": new_value})
-            record_button_history("pause1", new_value)
             update_switch_status()
 
         def toggle_sw2(e):
             current_value = db.child("smart-home").child("Door").child("Sw2").get().val() or "off"
             new_value = "off" if current_value == "on" else "on"
             db.child("smart-home").child("Door").update({"Sw2": new_value})
-            record_button_history("Sw2", new_value)
             update_switch_status()
 
         def toggle_pause2(e):
             current_value = db.child("smart-home").child("Door").child("pause2").get().val() or "off"
             new_value = "off" if current_value == "on" else "on"
             db.child("smart-home").child("Door").update({"pause2": new_value})
-            record_button_history("pause2", new_value)
             update_switch_status()
 
         def logout(e):
             page.client_storage.remove("saved_token")
             show_login()
 
+        # กำหนด event handler
         sw_men.on_click = toggle_sw1
         sw_men_pause.on_click = toggle_pause1
         sw_women.on_click = toggle_sw2
@@ -139,7 +116,8 @@ def main(page: ft.Page):
 
         update_switch_status()
 
-        user_text = ft.Text(f"Logged in as: {display_name}", size=16, color=ft.Colors.BLUE)
+        # แสดง user info ด้านบน (ตัวอย่าง)
+        user_text = ft.Text(f"Logged in as: {user_info.get('displayName') or user_info.get('email')}", size=16, color=ft.Colors.BLUE)
 
         MenuTemplat = ft.NavigationBar(
             on_change=logout,
@@ -170,19 +148,20 @@ def main(page: ft.Page):
 
         saved_token = page.client_storage.get("saved_token")
 
+        # ถ้ามี token ให้ลองดึงข้อมูลและแสดงหน้า Home เลย
         if saved_token:
             try:
                 user_info = auth.get_account_info(saved_token)
+                # user_info เป็น dict ให้เราเอา uid และ displayName ออกมาด้วย
                 user_data = user_info['users'][0]
+                # บันทึก user data ลง DB (ถ้ายังไม่มี)
                 user_id = user_data['localId']
                 display_name = user_data.get('displayName', user_data.get('email'))
 
-                # 👉 อัปเดต UsersActive
-                db.child("UsersActive").child(user_id).set({
+                # เก็บข้อมูล userId และ displayName ลงฐานข้อมูล Realtime Database
+                db.child("UsersLoggedIn").child(user_id).push({
                     "displayName": display_name,
-                    "email": user_data.get('email'),
-                    "active": True,
-                    "lastActiveTime": time.strftime("%Y-%m-%d %H:%M:%S")
+                    "lastLogin": int(time.time())
                 })
 
                 show_home(user_data)
@@ -193,6 +172,7 @@ def main(page: ft.Page):
         username = ft.TextField(label="Username", width=300)
         password = ft.TextField(label="Password", password=True, can_reveal_password=True, width=300)
         message = ft.Text("", color="red")
+
         internet_status = ft.Text("Checking Internet...", color=ft.Colors.ORANGE)
 
         def update_internet_status():
@@ -214,50 +194,48 @@ def main(page: ft.Page):
             for user in users.each():
                 user_data = user.val()
                 if user_data['name'] == username.value and str(user_data['password']) == password.value:
+                    # Use email/password login to get token
                     try:
                         user_auth = auth.sign_in_with_email_and_password(user_data['email'], user_data['password'])
                         id_token = user_auth['idToken']
                         page.client_storage.set("saved_token", id_token)
 
-                        user_info = auth.get_account_info(id_token)
-                        user_data_info = user_info['users'][0]
-                        user_id = user_data_info['localId']
-                        display_name = user_data_info.get('displayName', user_data_info.get('email'))
-
-                        # 👉 UsersLoggedIn
-                        db.child("UsersLoggedIn").child(user_id).push({
-                            "displayName": display_name,
-                            "lastLogin": time.strftime("%Y-%m-%d %H:%M:%S")
-                        })
-
-                        # 👉 UsersActive
-                        db.child("UsersActive").child(user_id).set({
-                            "displayName": display_name,
-                            "email": user_data_info.get('email'),
-                            "active": True,
-                            "lastActiveTime": time.strftime("%Y-%m-%d %H:%M:%S")
-                        })
-
-                        # 👉 LoginHistory
+                        # 🔥 บันทึกข้อมูล name, email ลง Firebase ใน node 'LoginHistory'
                         login_info = {
                             "name": user_data['name'],
                             "email": user_data['email'],
-                            "login_time": time.strftime("%Y-%m-%d %H:%M:%S")
+                            "login_time": time.strftime("%Y-%m-%d %H:%M:%S")  # timestamp login
                         }
                         db.child("LoginHistory").push(login_info)
 
-                        show_home(user_data_info)
-                        found = True
-                        break
                     except:
                         message.value = "เกิดข้อผิดพลาดในการรับ Token"
                         page.update()
                         return
 
+                    show_home()
+                    found = True
+                    break
             if not found:
                 message.value = "Username หรือ Password ไม่ถูกต้อง"
                 page.update()
 
+                message.value = "Username หรือ Password ไม่ถูกต้อง"
+                page.update()
+
+        # btn_login = ft.ElevatedButton(text="เข้าสู่ระบบ", on_click=login, width=300)
+
+        # page.add(
+        #     ft.Column([
+        #         ft.Text("ระบบควบคุมประตู", size=24, weight=ft.FontWeight.BOLD, color="blue"),
+        #         username,
+        #         password,
+        #         btn_login,
+        #         message,
+        #         internet_status
+        #     ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+        # )
+        # Add login UI centered in Card and centered on the page
         page.add(
             ft.Container(
                 content=ft.Column(
@@ -276,13 +254,15 @@ def main(page: ft.Page):
                                         username,
                                         password,
                                         message,
+                                        # ft.ElevatedButton("Login", on_click=login),
                                         ft.CupertinoFilledButton(
-                                            content=ft.Text("LOGIN"),
-                                            opacity_on_click=0.3,
-                                            on_click=login,
-                                            width=250,
-                                            height=50,
-                                        ),
+                                        content=ft.Text("LOGIN"),
+                                        opacity_on_click=0.3,
+                                        # on_click=lambda e: print(f"LOGIN! {username.value},{password.value}"),
+                                        on_click= login,
+                                        width=250,
+                                        height=50,
+                                    ),
                                         message
                                     ],
                                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -305,5 +285,7 @@ def main(page: ft.Page):
     show_login()
 
 if __name__ == "__main__":
-    # ft.app(target=main, port=8080, view=ft.WEB_BROWSER)
-    uvicorn.run(flet_app(main), host="0.0.0.0", port=int(os.environ.get("PORT", 8550)))
+    # รันด้วย Flet Server
+    ft.app(target=main, port=8080, view=ft.WEB_BROWSER)
+# if __name__ == "__main__":
+    # uvicorn.run(flet_app(main), host="0.0.0.0", port=int(os.environ.get("PORT", 8550)))
