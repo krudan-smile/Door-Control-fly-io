@@ -305,5 +305,5 @@ def main(page: ft.Page):
     show_login()
 
 if __name__ == "__main__":
-    # ft.app(target=main, port=8080, view=ft.WEB_BROWSER)
-    uvicorn.run(flet_app(main), host="0.0.0.0", port=int(os.environ.get("PORT", 8550)))
+    ft.app(target=main, port=8080, view=ft.WEB_BROWSER)
+    # uvicorn.run(flet_app(main), host="0.0.0.0", port=int(os.environ.get("PORT", 8550)))
