@@ -31,6 +31,11 @@ def update_display_name(id_token, new_display_name):
     return res.json()
 
 def update_password(id_token, new_password):
+    if not id_token:
+        raise ValueError("Missing idToken")
+    if not new_password:
+        raise ValueError("New password cannot be empty")
+
     url = f"https://identitytoolkit.googleapis.com/v1/accounts:update?key={firebaseConfig['apiKey']}"
     payload = {
         "idToken": id_token,
@@ -53,12 +58,9 @@ def main(page: ft.Page):
             return True
         except:
             return False
-    
-
 
     def show_home(user_info):
         page.clean()
-                
         user_id = user_info['localId']
         display_name = user_info.get('displayName', user_info.get('email'))
 
@@ -74,9 +76,6 @@ def main(page: ft.Page):
             selected=False,
             style=ft.ButtonStyle(color={"selected": ft.Colors.GREEN, "": ft.Colors.RED})
         )
-        # sw_men_pause = sw_men.clone()
-        # sw_women = sw_men.clone()
-        # sw_women_pause = sw_men.clone()        
         sw_men_pause = ft.IconButton(
             icon=ft.Icons.POWER_SETTINGS_NEW,
             icon_size=50,
@@ -110,7 +109,50 @@ def main(page: ft.Page):
 
             page.update()
 
-        
+        def toggle_sw1(e):
+            current_value = db.child("smart-home").child("Door").child("Sw1").get().val() or "off"
+            new_value = "off" if current_value == "on" else "on"
+            db.child("smart-home").child("Door").update({"Sw1": new_value})
+            update_switch_status()
+
+            db.child("ButtonHistory").push({
+                "name": display_name,
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+            })
+
+        def toggle_pause1(e):
+            current_value = db.child("smart-home").child("Door").child("pause1").get().val() or "off"
+            new_value = "off" if current_value == "on" else "on"
+            db.child("smart-home").child("Door").update({"pause1": new_value})
+            update_switch_status()
+            # Save button click to ButtonHistory
+            db.child("ButtonHistory").push({
+                "name": display_name,
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+            })
+
+        def toggle_sw2(e):
+            current_value = db.child("smart-home").child("Door").child("Sw2").get().val() or "off"
+            new_value = "off" if current_value == "on" else "on"
+            db.child("smart-home").child("Door").update({"Sw2": new_value})
+            update_switch_status()
+            # Save button click to ButtonHistory
+            db.child("ButtonHistory").push({
+                "name": display_name,
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+            })
+
+        def toggle_pause2(e):
+            current_value = db.child("smart-home").child("Door").child("pause2").get().val() or "off"
+            new_value = "off" if current_value == "on" else "on"
+            db.child("smart-home").child("Door").update({"pause2": new_value})
+            update_switch_status()
+            # Save button click to ButtonHistory
+            db.child("ButtonHistory").push({
+                "name": display_name,
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+            })
+
         def logout(e):
             page.client_storage.remove("saved_token")
             show_login()
@@ -131,28 +173,11 @@ def main(page: ft.Page):
         def go_to_history(e):
             show_history(user_info)
 
-        def toggle_switch(switch_name):
-            current_value = db.child("smart-home").child("Door").child(switch_name).get().val() or "off"
-            new_value = "off" if current_value == "on" else "on"
-            db.child("smart-home").child("Door").update({switch_name: new_value})
-            update_switch_status()
-
-            db.child("ButtonHistory").push({
-                "name": display_name,
-                "action": switch_name,
-                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
-            })
-
-        sw_men.on_click = lambda e: toggle_switch("Sw1")
-        sw_men_pause.on_click = lambda e: toggle_switch("pause1")
-        sw_women.on_click = lambda e: toggle_switch("Sw2")
-        sw_women_pause.on_click = lambda e: toggle_switch("pause2")            
-
         # กำหนด event handler
-        # sw_men.on_click = toggle_sw1
-        # sw_men_pause.on_click = toggle_pause1
-        # sw_women.on_click = toggle_sw2
-        # sw_women_pause.on_click = toggle_pause2
+        sw_men.on_click = toggle_sw1
+        sw_men_pause.on_click = toggle_pause1
+        sw_women.on_click = toggle_sw2
+        sw_women_pause.on_click = toggle_pause2
 
         update_switch_status()
 
@@ -282,13 +307,12 @@ def main(page: ft.Page):
     def show_history(user_info):
         page.controls.clear()
 
-        button_history_list = db.child("ButtonHistory").get().each() or []
-        login_history_list = db.child("LoginHistory").get().each() or []
-
+        button_history_list = db.child("button_history").get().each() or []
+        login_history_list = db.child("login_history").get().each() or []
 
         button_history_view = ft.Column(
             controls=[
-                ft.Text(f"🔵 {item.val()['name']} → {item.val()['action']}→ {item.val()['timestamp']}", size=16)
+                ft.Text(f"🔵 {item.key()} → {item.val()['timestamp']}", size=16)
                 for item in button_history_list
             ],
             spacing=5
@@ -296,7 +320,7 @@ def main(page: ft.Page):
 
         login_history_view = ft.Column(
             controls=[
-                ft.Text(f"🟢 {item.val()['name']} → {item.val()['login_time']}", size=16)
+                ft.Text(f"🟢 {item.key()} → {item.val()['login_time']}", size=16)
                 for item in login_history_list
             ],
             spacing=5
@@ -335,7 +359,7 @@ def main(page: ft.Page):
                                     padding=10,
                                     border_radius=8
                                 ),
-                                # ft.ElevatedButton("Back", on_click=back_to_home, icon=ft.Icons.ARROW_BACK),
+                                ft.ElevatedButton("Back", on_click=back_to_home, icon=ft.Icons.ARROW_BACK),
                             ],
                             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                             spacing=15
