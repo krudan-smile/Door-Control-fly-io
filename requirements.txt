@@ -1,0 +1,5 @@
+flet==0.28.3
+flet-web
+pyrebase4==4.7.1
+requests<2.30
+uvicorn==0.29.0
